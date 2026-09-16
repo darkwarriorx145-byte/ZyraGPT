@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-ink-900 text-gray-100 font-sans;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    @apply bg-ember-500/30 text-ember-100;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-3xl;
+  }
+
+  .glass-card {
+    @apply bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08] rounded-3xl transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-white/[0.06] border-white/[0.12];
+  }
+
+  .glow-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border;
+  }
+
+  .glow-ember {
+    @apply text-ember-300 border-ember-500/30 bg-ember-500/10;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+  }
+
+  .glow-amber {
+    @apply text-amber-400 border-amber-500/30 bg-amber-500/10;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+
+  .glow-green {
+    @apply text-emerald-300 border-emerald-500/30 bg-emerald-500/10;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  }
+
+  .text-gradient-ember {
+    @apply bg-gradient-to-r from-ember-400 via-amber-400 to-ember-500 bg-clip-text text-transparent;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-ember-500 to-ember-600 text-white font-semibold rounded-xl px-5 py-2.5 transition-all duration-300 hover:from-ember-400 hover:to-ember-500 hover:shadow-lg hover:shadow-ember-500/30;
+  }
+
+  .btn-ghost {
+    @apply text-gray-400 hover:text-white hover:bg-white/5 rounded-xl px-4 py-2.5 transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 30px rgba(249, 115, 22, 0.3);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
