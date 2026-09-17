@@ -64,7 +64,7 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
   for (const model of models) {
     try {
       const response = await fetch(
-        `https://api-inference.huggingface.co/models/${model}`,
+        `https://router.huggingface.co/models/${model}`,
         {
           method: "POST",
           headers: {
