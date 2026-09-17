@@ -56,52 +56,60 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
     };
   }
 
-  // Updated to FLUX.1-schnell, which is fully supported on the Hugging Face serverless inference router
-  const models = [
-    "black-forest-labs/FLUX.1-schnell",
-  ];
-
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://router.huggingface.co/hf-inference/models/${model}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${HF_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inputs: prompt,
-            options: { wait_for_model: true },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("Hugging Face error response:", response.status, errText);
-        return { error: `Hugging Face API error (${response.status}): ${errText}` };
+  try {
+    // Using the current active router pathway for serverless models
+    const response = await fetch(
+      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          options: { wait_for_model: true },
+        }),
       }
+    );
 
-      const buffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
-      let binary = "";
-      const chunkSize = 8192;
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.subarray(i, i + chunkSize);
-        binary += String.fromCharCode.apply(null, Array.from(chunk));
-      }
-      const base64 = btoa(binary);
-
-      return { image: `data:image/png;base64,${base64}` };
-    } catch (err) {
-      console.error("Image generation exception:", err);
-      return { error: (err as Error).message };
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Hugging Face error response:", response.status, errText);
+      return { error: `Hugging Face API error (${response.status}): ${errText}` };
     }
-  }
 
-  return { error: "Image generation failed. All models are currently unavailable." };
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      if (data.image) {
+        return { image: data.image.startsWith("data:") ? data.image : `data:image/png;base64,${data.image}` };
+      }
+      if (Array.isArray(data) && data[0]?.generated_image) {
+        return { image: `data:image/png;base64,${data[0].generated_image}` };
+      }
+      if (data.error) {
+        return { error: `HF model error: ${data.error}` };
+      }
+      return { error: "Unexpected JSON response structure from Hugging Face." };
+    }
+
+    const buffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64 = btoa(binary);
+
+    return { image: `data:image/png;base64,${base64}` };
+  } catch (err) {
+    console.error("Image generation exception:", err);
+    return { error: (err as Error).message };
+  }
 }
 
 Deno.serve(async (req: Request) => {
