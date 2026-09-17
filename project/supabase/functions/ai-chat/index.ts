@@ -64,7 +64,7 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
   for (const model of models) {
     try {
       const response = await fetch(
-        `https://router.huggingface.co/models/${model}`,
+        `https://router.huggingface.co/hf-inference/models/${model}`,
         {
           method: "POST",
           headers: {
@@ -103,6 +103,13 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({ status: "online", message: "ZyraGPT Edge Function is running successfully!" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   if (!OPENROUTER_API_KEY) {
