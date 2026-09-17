@@ -52,52 +52,48 @@ function extractImagePrompt(text: string): string {
 async function generateImage(prompt: string): Promise<{ image: string } | { error: string }> {
   if (!HF_API_KEY) {
     return {
-      error:
-        "Hugging Face API key not configured. Set HUGGING_FACE_API_KEY as an edge function secret.",
+      error: "Hugging Face API key not configured. Set HUGGING_FACE_API_KEY as an edge function secret.",
     };
   }
 
-  const models = [
-    "stabilityai/stable-diffusion-xl-base-1.0",
-  ];
-
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://router.huggingface.co/hf-inference/models/${model}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${HF_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inputs: prompt,
-            options: { wait_for_model: true },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        const base64 = btoa(
-          String.fromCharCode(...new Uint8Array(buffer))
-        );
-        return { image: `data:image/png;base64,${base64}` };
+  try {
+    const response = await fetch(
+      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          options: { wait_for_model: true },
+        }),
       }
+    );
 
-      if (response.status === 503) {
-        continue;
-      }
-
+    if (!response.ok) {
       const errText = await response.text();
-      console.error(`HF model ${model} failed:`, response.status, errText);
-    } catch (err) {
-      console.error(`HF model ${model} error:`, err.message);
+      console.error("Hugging Face error response:", response.status, errText);
+      return { error: `Hugging Face API error (${response.status}): ${errText}` };
     }
-  }
 
-  return { error: "Image generation failed. All models are currently unavailable." };
+    const buffer = await response.arrayBuffer();
+    // Safe base64 encoding for Deno runtime
+    const uint8Array = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64 = btoa(binary);
+
+    return { image: `data:image/png;base64,${base64}` };
+  } catch (err) {
+    console.error("Image generation exception:", err);
+    return { error: (err as Error).message };
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -114,16 +110,15 @@ Deno.serve(async (req: Request) => {
 
   if (!OPENROUTER_API_KEY) {
     return new Response(
-      JSON.stringify({
-        error:
-          "OpenRouter API key not configured. Set OPENROUTER_API_KEY as an edge function secret.",
-      }),
+      JSON.stringify({ error: "OpenRouter API key not configured." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
   try {
-    const { messages, model = "zyra-mini" } = await req.json();
+    const body = await req.json();
+    const messages = body?.messages ?? [];
+    const model = body?.model ?? "zyra-mini";
 
     const lastMessage = messages[messages.length - 1];
     const lastContent = lastMessage?.content ?? "";
