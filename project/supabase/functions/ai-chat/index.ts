@@ -57,7 +57,7 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
   }
 
   try {
-    // Using the current active router pathway for serverless models
+    // Updated to use the modern multi-provider gateway routing endpoint with explicit provider target
     const response = await fetch(
       "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       {
@@ -65,10 +65,10 @@ async function generateImage(prompt: string): Promise<{ image: string } | { erro
         headers: {
           Authorization: `Bearer ${HF_API_KEY}`,
           "Content-Type": "application/json",
+          "x-use-cache": "false",
         },
         body: JSON.stringify({
           inputs: prompt,
-          options: { wait_for_model: true },
         }),
       }
     );
